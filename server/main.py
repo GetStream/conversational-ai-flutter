@@ -6,6 +6,8 @@ from huggingface import query_huggingface_dialogpt
 from input import DialoGPTInput, Inputs
 from stream_chat import StreamChat
 import os
+
+from channel import channel_from_dict
 your_api_key = os.environ.get('api_key')
 your_api_secret = os.environ.get('api_secret')
 
@@ -20,11 +22,20 @@ async def chatEvent(request):
     data = await request.json()
     event = event_from_dict(data)
     if event.type == "message.new" and event.message.user.id != "eugene-goostman":
-        print("new user message")
-        channel = chat.channel("messaging", "my-ai-friend")
-        json_data = DialoGPTInput(inputs=Inputs(
-            generated_responses=[], past_user_inputs=[], text=event.message.text))
 
+        channel = chat.channel("messaging", "my-ai-friend")
+        result = channel.query(
+            messages={"limit": 300}
+        )
+        channel_query = channel_from_dict(result)
+        messages = channel_query.messages
+        generated_responses = [
+            m.text for m in messages if m.user.id == "eugene-goostman"]
+        past_user_inputs = [
+            m.text for m in messages if m.user.id == "sacha-arbonel"]
+
+        json_data = DialoGPTInput(inputs=Inputs(
+            generated_responses=generated_responses, past_user_inputs=past_user_inputs, text=event.message.text))
         response = query_huggingface_dialogpt(json_data)
         generated_responses = response.conversation.generated_responses
         array_length = len(generated_responses)
