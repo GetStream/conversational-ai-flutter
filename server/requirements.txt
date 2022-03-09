@@ -1,2 +1,4 @@
 stream-chat==4.1.0
 requests==2.26.0
+starlette==0.17.1
+uvicorn==0.16.0
