@@ -28,11 +28,11 @@ def to_class(c: Type[T], x: Any) -> dict:
 
 
 class Inputs:
-    generated_responses: List[str]
-    past_user_inputs: List[str]
+    generated_responses: List[Any]
+    past_user_inputs: List[Any]
     text: str
 
-    def __init__(self, generated_responses: List[str], past_user_inputs: List[str], text: str) -> None:
+    def __init__(self, generated_responses: List[Any], past_user_inputs: List[Any], text: str) -> None:
         self.generated_responses = generated_responses
         self.past_user_inputs = past_user_inputs
         self.text = text
@@ -40,15 +40,15 @@ class Inputs:
     @staticmethod
     def from_dict(obj: Any) -> 'Inputs':
         assert isinstance(obj, dict)
-        generated_responses = from_list(from_str, obj.get("generated_responses"))
-        past_user_inputs = from_list(from_str, obj.get("past_user_inputs"))
+        generated_responses = from_list(lambda x: x, obj.get("generated_responses"))
+        past_user_inputs = from_list(lambda x: x, obj.get("past_user_inputs"))
         text = from_str(obj.get("text"))
         return Inputs(generated_responses, past_user_inputs, text)
 
     def to_dict(self) -> dict:
         result: dict = {}
-        result["generated_responses"] = from_list(from_str, self.generated_responses)
-        result["past_user_inputs"] = from_list(from_str, self.past_user_inputs)
+        result["generated_responses"] = from_list(lambda x: x, self.generated_responses)
+        result["past_user_inputs"] = from_list(lambda x: x, self.past_user_inputs)
         result["text"] = from_str(self.text)
         return result
 
