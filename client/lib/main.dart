@@ -1,67 +1,111 @@
 import 'package:flutter/material.dart';
+import 'package:stream_chat_flutter/stream_chat_flutter.dart';
+import 'package:stream_chat_localizations/stream_chat_localizations.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  /// Create a new instance of [StreamChatClient] passing the apikey obtained
+  /// from your project dashboard.
+  final client = StreamChatClient(
+    'ay57s8swfnan',
+    logLevel: Level.INFO,
+  );
+
+  /// Set the current user and connect the websocket. In a production
+  /// scenario, this should be done using a backend to generate a user token
+  /// using our server SDK.
+  ///
+  /// Please see the following for more information:
+  /// https://getstream.io/chat/docs/ios_user_setup_and_tokens/
+  await client.connectUser(
+    User(id: 'sacha-arbonel'),
+    '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoic2FjaGEtYXJib25lbCJ9.fzDKEyiQ40J4YYgtZxpeQhn6ajX-GEnKZOOmcb-xa7M''',
+  );
+
+  final channel = client.channel('messaging', id: 'my-ai-friend');
+
+  await channel.watch();
+
+  runApp(
+    MyApp(
+      client: client,
+      channel: channel,
+    ),
+  );
 }
 
+/// Example application using Stream Chat Flutter widgets.
+///
+/// Stream Chat Flutter is a set of Flutter widgets which provide full chat
+/// functionalities for building Flutter applications using Stream. If you'd
+/// prefer using minimal wrapper widgets for your app, please see our other
+/// package, `stream_chat_flutter_core`.
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  /// Example using Stream's Flutter package.
+  ///
+  /// If you'd prefer using minimal wrapper widgets for your app, please see
+  /// our other package, `stream_chat_flutter_core`.
+  const MyApp({
+    Key? key,
+    required this.client,
+    required this.channel,
+  }) : super(key: key);
+
+  /// Instance of Stream Client.
+  ///
+  /// Stream's [StreamChatClient] can be used to connect to our servers and
+  /// set the default user for the application. Performing these actions
+  /// trigger a websocket connection allowing for real-time updates.
+  final StreamChatClient client;
+
+  /// Instance of the Channel
+  final Channel channel;
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
+  Widget build(BuildContext context) => MaterialApp(
+        theme: ThemeData.light(),
+        darkTheme: ThemeData.dark(),
+        supportedLocales: const [
+          Locale('en'),
+          Locale('hi'),
+          Locale('fr'),
+          Locale('it'),
+          Locale('es'),
+        ],
+        localizationsDelegates: GlobalStreamChatLocalizations.delegates,
+        builder: (context, widget) => StreamChat(
+          client: client,
+          child: widget,
+        ),
+        home: StreamChannel(
+          channel: channel,
+          child: const ChannelPage(),
+        ),
+      );
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
+/// A list of messages sent in the current channel.
+///
+/// This is implemented using [MessageListView], a widget that provides query
+/// functionalities fetching the messages from the api and showing them in a
+/// listView.
+class ChannelPage extends StatelessWidget {
+  /// Creates the page that shows the list of messages
+  const ChannelPage({
+    Key? key,
+  }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+  Widget build(BuildContext context) => Scaffold(
+        appBar: const ChannelHeader(),
+        body: Column(
+          children: const <Widget>[
+            Expanded(
+              child: MessageListView(),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
+            MessageInput(attachmentLimit: 3),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
+      );
 }
